@@ -3,6 +3,7 @@
     [System.Serializable]
     public class RequestFinishDto
     {
-        public FinishDto finish;
+        public int id;
+        public string word;
     }
 }

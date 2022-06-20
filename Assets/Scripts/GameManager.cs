@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using Dtos.Finish;
 using Dtos.Initialize;
@@ -9,8 +8,12 @@ using Random = UnityEngine.Random;
 public class GameManager : MonoBehaviour
 {
     private static GameManager _instance;
-    public static GameManager Instance { get; set; }
     
+    public static GameManager GetInstance()
+    {
+        return _instance;
+    }
+
     [SerializeField] private List<string> strList = new List<string>(5);
     [SerializeField] private string word;
     [SerializeField] private Text wordText;
@@ -18,13 +21,23 @@ public class GameManager : MonoBehaviour
     [SerializeField] private int bonus;
     [SerializeField] private bool won;
     [SerializeField] private int id;
+    [SerializeField] private int wonCount;
+    [SerializeField] private int totalMoneyWon;
+    [SerializeField] private bool canPlay;
 
+    [SerializeField] private GameObject gameCanvas;
+    [SerializeField] private GameObject loginScreen;
+
+    [SerializeField] private AuthorizeManager _authorizeManager;
+    
     [SerializeField] private RequestFinishDto requestFinishDto = new RequestFinishDto();
 
     private readonly HttpManager _httpManager = new HttpManager();
     
     private void Update()
     {
+        if (!gameCanvas.activeSelf) return;
+        
         if (Input.GetKeyDown(KeyCode.Backspace))
         {
             if(strList.Count > 0)
@@ -34,7 +47,7 @@ public class GameManager : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.Return))
         {
             word = string.Join("", strList).ToLower();
-            requestFinishDto.finish.word = word;
+            requestFinishDto.word = word;
             SendFinishRequest();
             bonusText.text = $"Won amount: {bonus}";
             
@@ -43,25 +56,22 @@ public class GameManager : MonoBehaviour
 
         wordText.text = string.Join("", strList).ToLower();
     }
-
-    private void Send()
-    {
-        var json = JsonUtility.ToJson(requestFinishDto);
-        print(json);
-    }
-
+    
     private void SendFinishRequest()
     { 
         var finishDto = new RequestFinishDto()
         {
-            finish = requestFinishDto.finish
+            id = this.id,
+            word = this.word
         };
-        var (success, responseFinishDto) = _httpManager.SendFinishRequest(finishDto);
+        var (success, responseFinishDto) = _httpManager.SendFinishRequest(finishDto, _authorizeManager);
         
         if (success)
         {
             bonus = responseFinishDto.bonus;
             won = responseFinishDto.won;
+            wonCount = responseFinishDto.wonCount;
+            totalMoneyWon = responseFinishDto.totalMoneyWon;
         }
         else
         {
@@ -70,21 +80,27 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    private void InitializeGame()
+    public void InitializeGame()
     {
         var initializeRequestDto = new RequestInitializeDto
         {
             id = id
         };
         var (success, initializeResponseDto) =
-            _httpManager.SendInitializeRequest(initializeRequestDto);
+            _httpManager.SendInitializeRequest(initializeRequestDto, _authorizeManager);
         if (success)
         {
-            print("succes");
+            id = initializeResponseDto.id;
+            wonCount = initializeResponseDto.wonCount;
+            totalMoneyWon = initializeResponseDto.totalMoneyWon;
+            canPlay = initializeResponseDto.canPlay;
+            
+            loginScreen.SetActive(false);
+            gameCanvas.SetActive(true);
         }
         else
         {
-            print("cos zepsules");
+            print("Wrong response from Server");
         }
     }
 
@@ -93,6 +109,8 @@ public class GameManager : MonoBehaviour
     /// </summary>
     private void OnGUI()
     {
+        if (!gameCanvas.activeSelf) return;
+        
         var e = Event.current;
         
         if (e.type != EventType.KeyDown || e.keyCode.ToString().Length != 1 ||
@@ -108,20 +126,15 @@ public class GameManager : MonoBehaviour
 
     public int GetId()
     {
-        return requestFinishDto.finish.id;
+        return id;
     }
 
     public string GetWord()
     {
-        return requestFinishDto.finish.word;
+        return word;
     }
 
     #endregion
-
-    private void Start()
-    {
-        InitializeGame();
-    }
 
     /// <summary>
     /// Singleton implementation
@@ -130,7 +143,7 @@ public class GameManager : MonoBehaviour
     {
         id = Random.Range(0, 1000);
 
-        requestFinishDto.finish.id = id;
+        requestFinishDto.id = id;
 
         if (_instance == null)
         {
