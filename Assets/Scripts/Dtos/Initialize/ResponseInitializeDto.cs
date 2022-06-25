@@ -1,9 +1,11 @@
-﻿namespace Dtos.Initialize
+﻿using System;
+
+namespace Dtos.Initialize
 {
     [System.Serializable]
     public class ResponseInitializeDto
     {
-        public int id;
+        public string id;
         public int wonCount;
         public int totalMoneyWon;
         public bool canPlay;

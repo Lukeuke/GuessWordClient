@@ -1,6 +1,8 @@
+using System;
 using System.Collections.Generic;
 using Dtos.Finish;
 using Dtos.Initialize;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using Random = UnityEngine.Random;
@@ -20,22 +22,27 @@ public class GameManager : MonoBehaviour
     [SerializeField] private Text bonusText;
     [SerializeField] private int bonus;
     [SerializeField] private bool won;
-    [SerializeField] private int id;
+    private string _id;
+    private Guid _guid;
+    private string _name;
     [SerializeField] private int wonCount;
     [SerializeField] private int totalMoneyWon;
     [SerializeField] private bool canPlay;
 
     [SerializeField] private GameObject gameCanvas;
     [SerializeField] private GameObject loginScreen;
+    [SerializeField] private TMP_InputField loginUsernameInput;
 
     [SerializeField] private AuthorizeManager _authorizeManager;
     
     [SerializeField] private RequestFinishDto requestFinishDto = new RequestFinishDto();
 
     private readonly HttpManager _httpManager = new HttpManager();
-    
+
     private void Update()
     {
+        _name = loginUsernameInput.text;
+
         if (!gameCanvas.activeSelf) return;
         
         if (Input.GetKeyDown(KeyCode.Backspace))
@@ -61,7 +68,7 @@ public class GameManager : MonoBehaviour
     { 
         var finishDto = new RequestFinishDto()
         {
-            id = this.id,
+            id = this._id.ToString(),
             word = this.word
         };
         var (success, responseFinishDto) = _httpManager.SendFinishRequest(finishDto, _authorizeManager);
@@ -84,13 +91,14 @@ public class GameManager : MonoBehaviour
     {
         var initializeRequestDto = new RequestInitializeDto
         {
-            id = id
+            id = _id.ToString(),
+            name = _name
         };
         var (success, initializeResponseDto) =
             _httpManager.SendInitializeRequest(initializeRequestDto, _authorizeManager);
         if (success)
         {
-            id = initializeResponseDto.id;
+            _id = initializeResponseDto.id;
             wonCount = initializeResponseDto.wonCount;
             totalMoneyWon = initializeResponseDto.totalMoneyWon;
             canPlay = initializeResponseDto.canPlay;
@@ -121,29 +129,14 @@ public class GameManager : MonoBehaviour
             strList.Add(e.keyCode.ToString());
         }
     }
-
-    #region Getters
-
-    public int GetId()
-    {
-        return id;
-    }
-
-    public string GetWord()
-    {
-        return word;
-    }
-
-    #endregion
-
+    
     /// <summary>
     /// Singleton implementation
     /// </summary>
     private void Awake()
     {
-        id = Random.Range(0, 1000);
-
-        requestFinishDto.id = id;
+        _guid = Guid.NewGuid();
+        _id = _guid.ToString();
 
         if (_instance == null)
         {

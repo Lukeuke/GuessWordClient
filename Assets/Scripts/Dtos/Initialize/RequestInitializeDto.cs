@@ -1,8 +1,11 @@
-﻿namespace Dtos.Initialize
+﻿using System;
+
+namespace Dtos.Initialize
 {
     [System.Serializable]
     public class RequestInitializeDto
     {
-        public int id;
+        public string id;
+        public string name;
     }
 }

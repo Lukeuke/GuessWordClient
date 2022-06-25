@@ -1737,12 +1737,12 @@ MonoBehaviour:
   bonusText: {fileID: 1695556233}
   bonus: 0
   won: 0
-  id: 1
   wonCount: 0
   totalMoneyWon: 0
   canPlay: 0
   gameCanvas: {fileID: 333418417}
   loginScreen: {fileID: 2028292175}
+  loginUsernameInput: {fileID: 1403411545}
   _authorizeManager: {fileID: 1226310718}
   requestFinishDto:
     id: 0
